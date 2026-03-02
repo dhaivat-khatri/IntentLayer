@@ -1,0 +1,538 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>IntentLayer — Product Decision Engine</title>
+    <meta name="description"
+        content="Upload customer interviews and get an AI-powered product decision report with feature recommendations and specs ready for engineering." />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Fira+Code:wght@400;500&display=swap"
+        rel="stylesheet" />
+    <link rel="stylesheet" href="app-style.css" />
+</head>
+
+<body>
+
+    <!-- ═══════════════════════════════════════════════════
+       APP SHELL — persistent nav bar
+       ═══════════════════════════════════════════════════ -->
+    <header id="app-nav">
+        <div class="nav-brand">
+            <span class="brand-icon">◈</span>
+            <span class="brand-name">IntentLayer</span>
+            <span class="brand-tag">Beta</span>
+        </div>
+        <nav class="nav-center" id="breadcrumb-nav">
+            <span class="bc-item active" data-page="upload">Upload</span>
+            <span class="bc-sep">›</span>
+            <span class="bc-item" id="bc-processing" data-page="processing">Analysis</span>
+            <span class="bc-sep">›</span>
+            <span class="bc-item" id="bc-report" data-page="report">Report</span>
+        </nav>
+        <div class="nav-right">
+            <a href="index.html" class="nav-link-small">← Marketing Site</a>
+            <div class="user-avatar" title="Account">F</div>
+        </div>
+    </header>
+
+    <!-- ═══════════════════════════════════════════════════
+       PAGE 1 — UPLOAD
+       ═══════════════════════════════════════════════════ -->
+    <div id="page-upload" class="page active">
+        <div class="page-inner">
+            <div class="page-header">
+                <h1 class="page-title">Upload customer interviews</h1>
+                <p class="page-subtitle">IntentLayer listens to your users and produces a product decision report.</p>
+            </div>
+
+            <!-- Input mode tabs -->
+            <div class="mode-tabs" id="mode-tabs">
+                <button class="mode-tab active" data-mode="upload" id="tab-upload">🎙 Upload audio / video</button>
+                <button class="mode-tab" data-mode="transcript" id="tab-transcript">📝 Paste transcript</button>
+            </div>
+
+            <!-- ── UPLOAD MODE ── -->
+            <div id="upload-mode-panel">
+                <!-- Drop zone -->
+                <div class="upload-zone" id="drop-zone" role="button" tabindex="0"
+                    aria-label="Upload area, click or drag files here">
+                    <div class="upload-zone-inner" id="drop-zone-inner">
+                        <div class="upload-icon">
+                            <svg width="40" height="40" viewBox="0 0 40 40" fill="none">
+                                <path d="M20 26V14M14 20l6-6 6 6" stroke="currentColor" stroke-width="2"
+                                    stroke-linecap="round" stroke-linejoin="round" />
+                                <rect x="6" y="30" width="28" height="2" rx="1" fill="currentColor" opacity="0.3" />
+                            </svg>
+                        </div>
+                        <div class="upload-label">Drop interview files here</div>
+                        <div class="upload-sub">or <span class="upload-browse" id="upload-browse-btn">browse your
+                                computer</span></div>
+                        <div class="upload-types">Supports .mp4 · .mp3 · .wav · .m4a</div>
+                    </div>
+                    <input type="file" id="file-input" multiple accept=".mp4,.mp3,.wav,.m4a,audio/*,video/*"
+                        class="file-input-hidden" />
+                </div>
+
+                <!-- File list (appears after upload) -->
+                <div class="file-list" id="file-list"></div>
+
+                <!-- Privacy note -->
+                <div class="privacy-note">
+                    <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+                        <path d="M7 1L2 3.5V7c0 2.8 2.1 5.4 5 6 2.9-.6 5-3.2 5-6V3.5L7 1z" stroke="currentColor"
+                            stroke-width="1.2" stroke-linejoin="round" />
+                    </svg>
+                    Your recordings are private and used only to generate your report.
+                </div>
+            </div>
+
+            <!-- ── TRANSCRIPT MODE ── -->
+            <div id="transcript-mode-panel" style="display:none">
+                <div class="transcript-area-wrap">
+                    <textarea id="transcript-input" class="transcript-textarea"
+                        placeholder="Paste your interview transcript(s) here. You can paste multiple interviews — separate them with a line like '--- Interview 2 ---'. The more context the better."
+                        rows="14" spellcheck="false"></textarea>
+                    <div class="transcript-charcount" id="transcript-charcount">0 characters</div>
+                </div>
+
+                <!-- API key config -->
+                <div class="api-config" id="api-config">
+                    <div class="api-config-header" id="api-config-toggle">
+                        <span class="api-config-icon">🔑</span>
+                        <span class="api-config-label">AI Model Configuration</span>
+                        <span class="api-config-status" id="api-status-badge">Not configured — uses demo output</span>
+                        <svg class="api-chevron" id="api-chevron" width="12" height="12" viewBox="0 0 12 12"
+                            fill="none">
+                            <path d="M3 4.5l3 3 3-3" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"
+                                stroke-linejoin="round" />
+                        </svg>
+                    </div>
+                    <div class="api-config-body" id="api-config-body" style="display:none">
+                        <!-- Provider -->
+                        <div class="api-field-row">
+                            <label class="api-label" for="api-provider-select">Provider</label>
+                            <select id="api-provider-select" class="api-select">
+                                <option value="ollama">🦙 Ollama (local — free)</option>
+                                <option value="huggingface">🤗 Hugging Face (free tier)</option>
+                                <option value="groq">⚡ Groq (fast inference)</option>
+                                <option value="openai">GPT-4o (OpenAI)</option>
+                                <option value="anthropic">Claude 3.5 Sonnet (Anthropic)</option>
+                            </select>
+                        </div>
+                        <!-- Model name — shown for Ollama & HuggingFace -->
+                        <div class="api-field-row" id="model-name-row">
+                            <label class="api-label" for="api-model-input" id="model-name-label">Model</label>
+                            <input type="text" id="api-model-input" class="api-key-field" placeholder="llama3.2"
+                                autocomplete="off" spellcheck="false" value="llama3.2" />
+                        </div>
+                        <!-- API key — hidden for Ollama -->
+                        <div class="api-field-row" id="api-key-row">
+                            <label class="api-label" for="api-key-input">API Key</label>
+                            <input type="password" id="api-key-input" class="api-key-field"
+                                placeholder="Not needed for Ollama" autocomplete="off" spellcheck="false" />
+                        </div>
+                        <p class="api-note" id="api-note-text">Ollama runs locally — no key needed. Make sure Ollama is
+                            running (<code>ollama serve</code>) and the model is pulled
+                            (<code>ollama pull llama3.2</code>). Start Ollama with
+                            <code>OLLAMA_ORIGINS="*" ollama serve</code> to allow browser access.
+                        </p>
+                    </div>
+                </div>
+
+
+                <div class="privacy-note" style="margin-top:12px">
+                    <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+                        <path d="M7 1L2 3.5V7c0 2.8 2.1 5.4 5 6 2.9-.6 5-3.2 5-6V3.5L7 1z" stroke="currentColor"
+                            stroke-width="1.2" stroke-linejoin="round" />
+                    </svg>
+                    Your transcript is sent directly to the AI provider. IntentLayer does not store your text.
+                </div>
+            </div>
+
+            <!-- Action -->
+            <div class="upload-actions">
+                <button class="btn btn-primary btn-large" id="start-analysis-btn" disabled>
+                    <span class="btn-icon">◈</span>
+                    Start Analysis
+                </button>
+                <span class="upload-hint" id="upload-hint">Add at least one interview to begin</span>
+            </div>
+
+            <!-- Tips panel -->
+            <div class="tips-grid">
+                <div class="tip-card">
+                    <div class="tip-icon">🎙</div>
+                    <h4>Recording Tips</h4>
+                    <p>Zoom, Loom, Riverside, or any recorded discovery call works. 15–60 min interviews produce the
+                        best signal.</p>
+                </div>
+                <div class="tip-card">
+                    <div class="tip-icon">📊</div>
+                    <h4>More = Better</h4>
+                    <p>Upload 3–10 interviews for stronger pattern detection. Single interviews still produce useful
+                        output.</p>
+                </div>
+                <div class="tip-card">
+                    <div class="tip-icon">⚡</div>
+                    <h4>Fast Processing</h4>
+                    <p>Most analyses complete in 2–4 minutes. We run transcription and AI extraction in parallel.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ═══════════════════════════════════════════════════
+       PAGE 2 — PROCESSING
+       ═══════════════════════════════════════════════════ -->
+    <div id="page-processing" class="page">
+        <div class="page-inner page-inner--narrow">
+            <div class="processing-header">
+                <div class="processing-pulse">
+                    <span class="pulse-ring"></span>
+                    <span class="pulse-core">◈</span>
+                </div>
+                <h1 class="page-title">Analyzing your interviews</h1>
+                <p class="page-subtitle">This usually takes 2–4 minutes. You may leave this page — we will keep
+                    processing.</p>
+            </div>
+
+            <!-- Stage list -->
+            <div class="stages-container" id="stages-container">
+                <div class="stage" data-stage="0">
+                    <div class="stage-left">
+                        <div class="stage-indicator"></div>
+                        <div class="stage-line"></div>
+                    </div>
+                    <div class="stage-content">
+                        <div class="stage-name">Uploading files</div>
+                        <div class="stage-detail" id="stage-detail-0">Transferring 3 recordings securely…</div>
+                    </div>
+                    <div class="stage-status"></div>
+                </div>
+                <div class="stage" data-stage="1">
+                    <div class="stage-left">
+                        <div class="stage-indicator"></div>
+                        <div class="stage-line"></div>
+                    </div>
+                    <div class="stage-content">
+                        <div class="stage-name">Transcribing interviews</div>
+                        <div class="stage-detail" id="stage-detail-1">Converting audio to text with speaker diarization…
+                        </div>
+                    </div>
+                    <div class="stage-status"></div>
+                </div>
+                <div class="stage" data-stage="2">
+                    <div class="stage-left">
+                        <div class="stage-indicator"></div>
+                        <div class="stage-line"></div>
+                    </div>
+                    <div class="stage-content">
+                        <div class="stage-name">Extracting pain points</div>
+                        <div class="stage-detail" id="stage-detail-2">Identifying user frustrations, workarounds, and
+                            unmet needs…</div>
+                    </div>
+                    <div class="stage-status"></div>
+                </div>
+                <div class="stage" data-stage="3">
+                    <div class="stage-left">
+                        <div class="stage-indicator"></div>
+                        <div class="stage-line"></div>
+                    </div>
+                    <div class="stage-content">
+                        <div class="stage-name">Identifying themes</div>
+                        <div class="stage-detail" id="stage-detail-3">Clustering pain points into product opportunity
+                            themes…</div>
+                    </div>
+                    <div class="stage-status"></div>
+                </div>
+                <div class="stage" data-stage="4">
+                    <div class="stage-left">
+                        <div class="stage-indicator"></div>
+                        <div class="stage-line"></div>
+                    </div>
+                    <div class="stage-content">
+                        <div class="stage-name">Evaluating product opportunities</div>
+                        <div class="stage-detail" id="stage-detail-4">Scoring opportunities by impact, frequency, and
+                            effort…</div>
+                    </div>
+                    <div class="stage-status"></div>
+                </div>
+                <div class="stage" data-stage="5">
+                    <div class="stage-left">
+                        <div class="stage-indicator"></div>
+                        <div class="stage-line"></div>
+                    </div>
+                    <div class="stage-content">
+                        <div class="stage-name">Generating feature recommendation</div>
+                        <div class="stage-detail" id="stage-detail-5">Selecting highest-impact action with supporting
+                            evidence…</div>
+                    </div>
+                    <div class="stage-status"></div>
+                </div>
+                <div class="stage last" data-stage="6">
+                    <div class="stage-left">
+                        <div class="stage-indicator"></div>
+                    </div>
+                    <div class="stage-content">
+                        <div class="stage-name">Writing product specification</div>
+                        <div class="stage-detail" id="stage-detail-6">Generating PRD, engineering plan, and coding agent
+                            prompt…</div>
+                    </div>
+                    <div class="stage-status"></div>
+                </div>
+            </div>
+
+            <!-- Overall progress bar -->
+            <div class="overall-progress" id="overall-progress-wrap">
+                <div class="progress-track">
+                    <div class="progress-fill" id="overall-progress-fill"></div>
+                </div>
+                <div class="progress-label" id="progress-label">Starting analysis…</div>
+            </div>
+
+            <!-- AI error state — shown when analysis fails -->
+            <div class="ai-error-state" id="ai-error-state" style="display:none">
+                <div class="ai-error-icon">⚠</div>
+                <h2 class="ai-error-title">Analysis failed</h2>
+                <p class="ai-error-msg" id="ai-error-msg">Unknown error.</p>
+                <div class="ai-error-tips" id="ai-error-tips"></div>
+                <div class="ai-error-actions">
+                    <button class="btn btn-primary" id="ai-error-retry">← Try Again</button>
+                    <button class="btn btn-secondary" id="ai-error-demo">View Demo Report Instead</button>
+                </div>
+            </div>
+
+            <!-- Files being processed -->
+            <div class="processing-files" id="processing-files"></div>
+        </div>
+    </div>
+
+
+    <!-- ═══════════════════════════════════════════════════
+       PAGE 3 — REPORT
+       ═══════════════════════════════════════════════════ -->
+    <div id="page-report" class="page">
+        <div class="report-layout">
+
+            <!-- Sidebar TOC -->
+            <aside class="report-sidebar" id="report-sidebar">
+                <div class="sidebar-label">REPORT SECTIONS</div>
+                <nav class="toc">
+                    <a href="#sec-pain" class="toc-item active" data-section="sec-pain">Pain Points</a>
+                    <a href="#sec-evidence" class="toc-item" data-section="sec-evidence">Evidence</a>
+                    <a href="#sec-themes" class="toc-item" data-section="sec-themes">Themes</a>
+                    <a href="#sec-rationale" class="toc-item" data-section="sec-rationale">Decision Rationale</a>
+                    <a href="#sec-recommend" class="toc-item" data-section="sec-recommend">Recommendation</a>
+                    <a href="#sec-personas" class="toc-item" data-section="sec-personas">User Personas</a>
+                    <a href="#sec-prd" class="toc-item" data-section="sec-prd">Product Spec</a>
+                    <a href="#sec-eng" class="toc-item" data-section="sec-eng">Engineering Plan</a>
+                    <a href="#sec-risks" class="toc-item" data-section="sec-risks">Risks</a>
+                    <a href="#sec-prompt" class="toc-item" data-section="sec-prompt">Agent Prompt</a>
+
+                </nav>
+                <div class="sidebar-divider"></div>
+                <div class="report-meta" id="report-meta">
+                    <div class="meta-row"><span class="meta-label">Pain points</span><span class="meta-val"
+                            id="meta-pain-count">—</span></div>
+                    <div class="meta-row"><span class="meta-label">Themes</span><span class="meta-val"
+                            id="meta-theme-count">—</span></div>
+                    <div class="meta-row"><span class="meta-label">Mode</span><span class="meta-val"
+                            id="meta-mode">—</span></div>
+                    <div class="meta-row"><span class="meta-label">Generated</span><span class="meta-val"
+                            id="report-date"></span></div>
+                </div>
+            </aside>
+
+            <!-- Main report body -->
+            <main class="report-body" id="report-body">
+
+                <!-- Report header bar -->
+                <div class="report-topbar">
+                    <div class="report-title-group">
+                        <div class="report-eyebrow">Product Decision Report</div>
+                        <h1 class="report-main-title" id="report-main-title">Product Decision Report</h1>
+                    </div>
+                    <div class="report-actions">
+                        <button class="btn btn-ghost btn-sm" id="share-btn">
+                            <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+                                <circle cx="11" cy="2.5" r="1.5" stroke="currentColor" stroke-width="1.2" />
+                                <circle cx="11" cy="11.5" r="1.5" stroke="currentColor" stroke-width="1.2" />
+                                <circle cx="2.5" cy="7" r="1.5" stroke="currentColor" stroke-width="1.2" />
+                                <path d="M4 7.5l5.5 3.5M9.5 3 4 6.5" stroke="currentColor" stroke-width="1.2"
+                                    stroke-linecap="round" />
+                            </svg>
+                            Share
+                        </button>
+                        <button class="btn btn-ghost btn-sm" id="pdf-btn">
+                            <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+                                <path d="M3 1h6l2 2v10H3V1z" stroke="currentColor" stroke-width="1.2"
+                                    stroke-linejoin="round" />
+                                <path d="M5 7h4M5 9.5h4M5 4.5h2" stroke="currentColor" stroke-width="1.2"
+                                    stroke-linecap="round" />
+                            </svg>
+                            Download PDF
+                        </button>
+                        <button class="btn btn-outline btn-sm" id="rerun-btn">
+                            <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+                                <path d="M2 7a5 5 0 1 0 1-3M2 4V1M2 4H5" stroke="currentColor" stroke-width="1.2"
+                                    stroke-linecap="round" stroke-linejoin="round" />
+                            </svg>
+                            Run another analysis
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Share modal -->
+                <div class="share-modal hidden" id="share-modal">
+                    <div class="share-modal-inner">
+                        <div class="share-modal-title">Share this report</div>
+                        <div class="share-url-row">
+                            <input type="text" class="share-url-input" id="share-url-input"
+                                value="https://app.intentlayer.ai/r/rpt_8f3x2k9p" readonly />
+                            <button class="btn btn-primary btn-sm" id="copy-link-btn">Copy link</button>
+                        </div>
+                        <div class="share-options">
+                            <label class="share-opt"><input type="checkbox" checked /> Anyone with the link can
+                                view</label>
+                            <label class="share-opt"><input type="checkbox" /> Require email to access</label>
+                        </div>
+                        <button class="share-close" id="share-close">✕</button>
+                    </div>
+                </div>
+
+                <!-- ── SECTION 1: PAIN POINTS ── -->
+                <section class="report-section" id="sec-pain">
+                    <div class="section-badge">Section 01</div>
+                    <h2 class="section-title">Top User Pain Points</h2>
+                    <p class="section-desc" id="pain-desc">Extracted from your customer interviews — ranked by severity
+                        and frequency.</p>
+                    <div class="pain-list" id="pain-list"></div>
+                </section>
+
+                <!-- ── SECTION 2: EVIDENCE FROM INTERVIEWS ── -->
+                <section class="report-section" id="sec-evidence">
+                    <div class="section-badge">Section 02</div>
+                    <h2 class="section-title">Evidence From Interviews</h2>
+                    <p class="section-desc">Direct quotes from users, grouped by pattern. The recommendation below is
+                        grounded in this evidence.</p>
+                    <div class="evidence-list" id="evidence-list"></div>
+                </section>
+
+                <!-- ── SECTION 3: THEMES ── -->
+                <section class="report-section" id="sec-themes">
+                    <div class="section-badge">Section 03</div>
+                    <h2 class="section-title">Identified Themes</h2>
+                    <p class="section-desc">Pain points clustered into product opportunity themes by semantic similarity
+                        and behavioral pattern.</p>
+                    <div class="themes-grid" id="themes-grid"></div>
+                </section>
+
+                <!-- ── SECTION 4: DECISION RATIONALE (NEW) ── -->
+                <section class="report-section" id="sec-rationale">
+                    <div class="section-badge">Section 04</div>
+                    <h2 class="section-title">Decision Rationale</h2>
+                    <p class="section-desc">How the AI reached the recommendation — root cause analysis, alternatives
+                        considered, and why this feature wins.</p>
+                    <div id="rationale-core"></div>
+                    <div id="rationale-alts"></div>
+                    <div id="rationale-winner"></div>
+                </section>
+
+                <!-- ── SECTION 5: RECOMMENDATION ── -->
+                <section class="report-section" id="sec-recommend">
+                    <div class="section-badge">Section 05</div>
+                    <h2 class="section-title">Recommended Feature</h2>
+                    <p class="section-desc">The highest-impact action based on pain point frequency, decision rationale,
+                        and implementation feasibility.</p>
+                    <div id="recommend-container"></div>
+                </section>
+
+                <!-- ── SECTION 6: USER PERSONAS ── -->
+                <section class="report-section" id="sec-personas">
+                    <div class="section-badge">Section 06</div>
+                    <h2 class="section-title">User Personas</h2>
+                    <p class="section-desc">Behavioral archetypes identified from the interviews — who your users
+                        actually are.</p>
+                    <div class="personas-grid" id="personas-grid"></div>
+                </section>
+
+                <!-- ── SECTION 7: PRODUCT SPEC ── -->
+                <section class="report-section" id="sec-prd">
+                    <div class="section-badge">Section 07</div>
+                    <h2 class="section-title">Product Specification</h2>
+                    <p class="section-desc">Structured PRD ready for your team or an AI coding agent.</p>
+                    <div class="prd-block" id="prd-block"></div>
+                </section>
+
+                <!-- ── SECTION 8: ENGINEERING PLAN ── -->
+                <section class="report-section" id="sec-eng">
+                    <div class="section-badge">Section 08</div>
+                    <h2 class="section-title">Engineering Plan</h2>
+                    <p class="section-desc">Task breakdown ready for sprint planning or direct import into your issue
+                        tracker.</p>
+                    <div class="eng-columns" id="eng-columns"></div>
+                </section>
+
+                <!-- ── SECTION 9: RISKS & MITIGATIONS ── -->
+                <section class="report-section" id="sec-risks">
+                    <div class="section-badge">Section 09</div>
+                    <h2 class="section-title">Risks &amp; Mitigations</h2>
+                    <p class="section-desc">Key risks to shipping this feature — and what happens if we build nothing.
+                    </p>
+                    <div id="risk-of-not-building-block"></div>
+                    <div class="risks-list" id="risks-list"></div>
+                </section>
+
+                <!-- ── SECTION 10: AGENT PROMPT ── -->
+                <section class="report-section" id="sec-prompt">
+                    <div class="section-badge">Section 10</div>
+                    <h2 class="section-title">Coding Agent Prompt</h2>
+                    <p class="section-desc">Paste directly into Cursor, Claude, or another AI coding agent to begin
+                        implementation.</p>
+                    <div class="prompt-block" id="prompt-block">
+                        <div class="prompt-header">
+                            <div class="prompt-header-left">
+                                <span class="prompt-filename">cursor-prompt.txt</span>
+                                <span class="prompt-badge">Ready to paste</span>
+                            </div>
+                            <button class="copy-prompt-btn" id="copy-prompt-btn">
+                                <svg width="13" height="13" viewBox="0 0 13 13" fill="none">
+                                    <rect x="1" y="4" width="8" height="8" rx="1.5" stroke="currentColor"
+                                        stroke-width="1.2" />
+                                    <path
+                                        d="M4 4V2.5A1.5 1.5 0 0 1 5.5 1H10a1.5 1.5 0 0 1 1.5 1.5V8A1.5 1.5 0 0 1 10 9.5H8.5"
+                                        stroke="currentColor" stroke-width="1.2" stroke-linecap="round" />
+                                </svg>
+                                Copy prompt
+                            </button>
+                        </div>
+                        <pre class="prompt-pre" id="agent-prompt-text"></pre>
+                    </div>
+                </section>
+
+
+                <!-- Report footer -->
+                <div class="report-footer">
+                    <div class="report-footer-brand">Generated by <strong>IntentLayer</strong> · AI Product Decision
+                        Engine</div>
+                    <div class="report-footer-actions">
+                        <button class="btn btn-primary" id="report-bottom-access">Request Early Access</button>
+                    </div>
+                </div>
+
+            </main>
+        </div>
+    </div>
+
+
+    <!-- PDF toast -->
+    <div class="toast hidden" id="toast"></div>
+
+    <script src="app.js"></script>
+</body>
+
+</html>

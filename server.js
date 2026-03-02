@@ -336,17 +336,6 @@ app.post('/api/analyze', async (req, res) => {
     const { transcript, provider = 'ollama', model = '' } = req.body;
     let { apiKey = '' } = req.body;
 
-    // Fall back to environment variable if no key sent from browser
-    const ENV_KEYS = {
-        groq: process.env.GROQ_API_KEY,
-        openai: process.env.OPENAI_API_KEY,
-        anthropic: process.env.ANTHROPIC_API_KEY,
-        huggingface: process.env.HF_API_KEY,
-    };
-    if (!apiKey.trim() && ENV_KEYS[provider]) {
-        apiKey = ENV_KEYS[provider];
-    }
-
     if (!transcript || transcript.trim().length < 100) {
         return res.status(400).json({ error: 'Transcript is too short (minimum ~100 characters).' });
     }

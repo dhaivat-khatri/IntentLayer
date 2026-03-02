@@ -518,6 +518,7 @@ function isProviderReady() {
 }
 
 function updateStartButton() {
+    const providerReady = isProviderReady();
     if (state.inputMode === 'upload') {
         const has = state.files.length > 0;
         startBtn.disabled = !has;
@@ -526,13 +527,11 @@ function updateStartButton() {
             : 'Add at least one interview to begin';
     } else {
         const len = transcriptInput.value.trim().length;
-        const providerReady = isProviderReady();
-        startBtn.disabled = len < 100;
-        const hasKey = providerReady;
+        startBtn.disabled = len < 100 || !providerReady;
         if (len < 100) {
             uploadHint.textContent = `Paste at least 100 characters of transcript (${len}/100)`;
-        } else if (!hasKey) {
-            uploadHint.innerHTML = '<span style="color:#f5a623">⚠ No API key — will show a fixed demo report, not your transcript. Expand \"AI Model Configuration\" above to add one.</span>';
+        } else if (!providerReady) {
+            uploadHint.innerHTML = '<span style="color:#f5a623">⚠ API key required for cloud models. Expand configuration.</span>';
         } else {
             uploadHint.textContent = `${len.toLocaleString()} characters ready — click Start Analysis`;
         }
@@ -591,27 +590,6 @@ async function startAnalysis() {
     const transcript = isTranscript ? transcriptInput.value.trim() : null;
 
     const providerReady = isProviderReady();
-
-    // If transcript mode but provider not ready — warn the user before proceeding
-    if (isTranscript && !providerReady) {
-        // Expand the config panel so they see it
-        configBody.style.display = 'flex';
-        configChevron.classList.add('open');
-        // Shake the status badge to draw attention
-        apiStatusBadge.classList.add('badge-shake');
-        setTimeout(() => apiStatusBadge.classList.remove('badge-shake'), 800);
-        // Ask the user if they want to continue without configuration
-        const proceed = window.confirm(
-            'No API key configured.\n\n' +
-            'Without a key, IntentLayer will show the same fixed demo report regardless of your transcript — it does NOT analyse your actual text.\n\n' +
-            'Options:\n' +
-            '• Ollama (free, local): no key needed — just run  OLLAMA_ORIGINS="*" ollama serve\n' +
-            '• HuggingFace (free tier): get a token at huggingface.co/settings/tokens\n' +
-            '• OpenAI / Anthropic: enter your API key\n\n' +
-            'Click OK to see the demo anyway, or Cancel to go back and configure.'
-        );
-        if (!proceed) return;
-    }
 
     showPage('processing');
     await new Promise(r => setTimeout(r, 100));

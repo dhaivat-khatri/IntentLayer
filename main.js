@@ -252,38 +252,12 @@ const sectionObserver = new IntersectionObserver((entries) => {
 
 sections.forEach(s => sectionObserver.observe(s));
 
-// ── CTA ACCESS BUTTON ───────────────────────────────────────
-document.getElementById('cta-access-btn').addEventListener('click', (e) => {
-  e.preventDefault();
-  // Scroll to footer email
-  const footer = document.getElementById('footer');
-  const top = footer.getBoundingClientRect().top + window.scrollY - 80;
-  window.scrollTo({ top, behavior: 'smooth' });
-  setTimeout(() => emailInput.focus(), 700);
-});
-
-// ── HERO DEMO BUTTON ────────────────────────────────────────
-document.getElementById('hero-demo-btn').addEventListener('click', (e) => {
-  e.preventDefault();
-  const demo = document.getElementById('demo');
-  const top = demo.getBoundingClientRect().top + window.scrollY - 72;
-  window.scrollTo({ top, behavior: 'smooth' });
-});
-
+// ── HERO HOW BUTTON ─────────────────────────────────────────
 document.getElementById('hero-how-btn').addEventListener('click', (e) => {
   e.preventDefault();
   const sol = document.getElementById('solution');
   const top = sol.getBoundingClientRect().top + window.scrollY - 72;
   window.scrollTo({ top, behavior: 'smooth' });
-});
-
-// ── NAV CTA BUTTON ──────────────────────────────────────────
-document.getElementById('nav-cta').addEventListener('click', (e) => {
-  e.preventDefault();
-  const footer = document.getElementById('footer');
-  const top = footer.getBoundingClientRect().top + window.scrollY - 80;
-  window.scrollTo({ top, behavior: 'smooth' });
-  setTimeout(() => emailInput.focus(), 700);
 });
 
 // ── PLACEHOLDER FOOTER LINKS ─────────────────────────────────
